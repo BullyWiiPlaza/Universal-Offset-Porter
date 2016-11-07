@@ -1,0 +1,14 @@
+# Compiled classes
+\target
+
+# Memory dumps
+*.bin
+
+# Tests
+\src/test
+
+# Notes
+*.txt
+
+# Configuration
+config.properties
