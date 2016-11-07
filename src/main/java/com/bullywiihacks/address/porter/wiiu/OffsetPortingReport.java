@@ -3,25 +3,28 @@ package com.bullywiihacks.address.porter.wiiu;
 import javax.xml.bind.DatatypeConverter;
 import java.util.List;
 
-public class PortedOffset
+public class OffsetPortingReport
 {
 	private boolean isAssembly;
 	private byte[] searchTemplate;
 	private int shiftBytes;
 	private int address;
 	private final MemoryRange memoryRange;
+	private double secondsElapsed;
 
-	public PortedOffset(int offset,
-	                    boolean isAssembly,
-	                    MemoryRange memoryRange,
-	                    List<Byte> searchTemplate,
-	                    int shiftBytes)
+	public OffsetPortingReport(int offset,
+	                           boolean isAssembly,
+	                           MemoryRange memoryRange,
+	                           List<Byte> searchTemplate,
+	                           int shiftBytes,
+	                           double secondsElapsed)
 	{
 		this.isAssembly = isAssembly;
 		this.searchTemplate = toByteArray(searchTemplate);
 		this.shiftBytes = shiftBytes;
 		this.address = offset;
 		this.memoryRange = memoryRange;
+		this.secondsElapsed = secondsElapsed;
 	}
 
 	public int getAddress()
@@ -63,10 +66,11 @@ public class PortedOffset
 	@Override
 	public String toString()
 	{
-		return "Assembly Offset: " + isAssembly + System.lineSeparator()
-				+ "Search Template Found: " + DatatypeConverter.printHexBinary(searchTemplate)
-				+ System.lineSeparator() + "Source Offset Shift Bytes: " + Integer.toHexString(shiftBytes).toUpperCase()
-				+ System.lineSeparator() + "Scanned Memory Range: " + memoryRange.toString()
-				+ System.lineSeparator() + "Ported Offset: " + Integer.toHexString(address).toUpperCase();
+		return "Seconds Taken: " + secondsElapsed + System.lineSeparator()
+				+ "Assembly Offset: " + isAssembly + System.lineSeparator()
+				+ "Search Template Found: " + DatatypeConverter.printHexBinary(searchTemplate) + System.lineSeparator()
+				+ "Source Offset Shift Bytes: " + Integer.toHexString(shiftBytes).toUpperCase() + System.lineSeparator()
+				+ "Scanned Memory Range: " + memoryRange.toString() + System.lineSeparator()
+				+ "Ported Offset: " + Integer.toHexString(address).toUpperCase();
 	}
 }

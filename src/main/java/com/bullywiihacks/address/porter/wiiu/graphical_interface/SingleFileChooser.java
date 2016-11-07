@@ -35,8 +35,10 @@ public class SingleFileChooser extends JFileChooser
 
 		if (selectedAnswer == JFileChooser.APPROVE_OPTION)
 		{
-			String selectedFile = getSelectedFile().getAbsolutePath();
-			pathTextComponent.setText(selectedFile);
+			String selectedFilePath = getSelectedFile().getAbsolutePath();
+			String workingDirectory = System.getProperty("user.dir");
+			selectedFilePath = selectedFilePath.replace(workingDirectory + File.separator, "");
+			pathTextComponent.setText(selectedFilePath);
 		}
 	}
 }

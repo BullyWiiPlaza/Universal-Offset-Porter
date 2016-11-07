@@ -71,10 +71,11 @@ public class OffsetPorter
 	/**
 	 * Ports the <code>sourceOffset</code> to the destination memory dump
 	 *
-	 * @return The {@link PortedOffset}
+	 * @return The {@link OffsetPortingReport}
 	 */
-	public PortedOffset port()
+	public OffsetPortingReport port()
 	{
+		long startingTime = System.currentTimeMillis();
 		System.out.println("Is assembly: " + isAssembly);
 
 		List<Integer> destinationTemplateMatches = new ArrayList<>();
@@ -121,14 +122,17 @@ public class OffsetPorter
 			System.out.println("Tries: " + currentTries);
 		}
 
+		long endingTime = System.currentTimeMillis();
+		double timeElapsed = (endingTime - startingTime) / (double) 1000;
+
 		// Return the only result
 		int ported = destinationTemplateMatches.get(0);
 		MemoryRange memoryRange = new MemoryRange(getStartingOffset(), getEndingOffset());
-		PortedOffset portedOffset = new PortedOffset(ported, isAssembly, memoryRange, searchTemplate, offsetShiftBytes);
+		OffsetPortingReport offsetPortingReport = new OffsetPortingReport(ported, isAssembly, memoryRange, searchTemplate, offsetShiftBytes, timeElapsed);
 		System.out.println("------");
-		System.out.println(portedOffset);
+		System.out.println(offsetPortingReport);
 
-		return portedOffset;
+		return offsetPortingReport;
 	}
 
 	private void findTemplateMatches(byte[] memoryDump,

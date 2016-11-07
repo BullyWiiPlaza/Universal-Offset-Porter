@@ -2,12 +2,13 @@ package com.bullywiihacks.address.porter.wiiu.graphical_interface;
 
 import com.bullywiihacks.address.porter.wiiu.AssemblyChecker;
 import com.bullywiihacks.address.porter.wiiu.OffsetPorter;
-import com.bullywiihacks.address.porter.wiiu.PortedOffset;
+import com.bullywiihacks.address.porter.wiiu.OffsetPortingReport;
 
 import javax.swing.*;
-import javax.swing.text.*;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.io.File;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -26,6 +27,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 	private JFormattedTextField sourceOffsetField;
 	private JTextArea resultsArea;
 	private JButton portButton;
+	private JButton informationButton;
 	private boolean porting;
 
 	private PersistentSettings persistentSettings;
@@ -41,26 +43,6 @@ public class UniversalOffsetPorterGUI extends JFrame
 		addSourceOffsetDocumentListener();
 		DefaultContextMenu.addDefaultContextMenu(resultsArea);
 
-		PlainDocument doc = new PlainDocument();
-		doc.setDocumentFilter(new DocumentFilter()
-		{
-			@Override
-			public void insertString(FilterBypass fb, int off, String str, AttributeSet attr)
-					throws BadLocationException
-			{
-				fb.insertString(off, str.replaceAll("\\D++", ""), attr);  // remove non-digits
-			}
-
-			@Override
-			public void replace(FilterBypass fb, int off, int len, String str, AttributeSet attr)
-					throws BadLocationException
-			{
-				fb.replace(off, len, str.replaceAll("\\D++", ""), attr);  // remove non-digits
-			}
-		});
-
-		offsetVarianceField.setDocument(doc);
-
 		maximumSearchTemplateTriesField.setValue(OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES);
 		offsetVarianceField.setValue(OffsetPorter.DEFAULT_OFFSET_VARIANCE);
 		dataBytesUnequalThresholdField.setValue(OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD);
@@ -68,6 +50,21 @@ public class UniversalOffsetPorterGUI extends JFrame
 
 		restorePersistentSettings();
 		addPersistentSettingsBackupShutdownHook();
+		addInformationButtonListener();
+	}
+
+	private void addInformationButtonListener()
+	{
+		informationButton.addActionListener(actionEvent ->
+		{
+			try
+			{
+				Desktop.getDesktop().browse(new URI("https://github.com/BullyWiiPlaza/Universal-Offset-Porter"));
+			} catch (Exception exception)
+			{
+				exception.printStackTrace();
+			}
+		});
 	}
 
 	private void restorePersistentSettings()
@@ -254,8 +251,8 @@ public class UniversalOffsetPorterGUI extends JFrame
 						AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD = getDoubleValue(assemblyNullBytesThresholdField);
 
 						OffsetPorter offsetPorter = new OffsetPorter(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset);
-						PortedOffset portedOffset = offsetPorter.port();
-						resultsArea.setText(portedOffset.toString());
+						OffsetPortingReport offsetPortingReport = offsetPorter.port();
+						resultsArea.setText(offsetPortingReport.toString());
 					} catch (Exception exception)
 					{
 						exception.printStackTrace();
@@ -280,7 +277,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 		WindowUtilities.setIconImage(this);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
-		setSize(500, 500);
-		setTitle("Universal Offset Porter");
+		setSize(700, 500);
+		setTitle("Universal Offset Porter by BullyWiiPlaza");
 	}
 }
