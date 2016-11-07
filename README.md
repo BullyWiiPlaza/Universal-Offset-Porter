@@ -18,6 +18,3 @@ If this happens either you're trying to port something which can't generally be 
 
 ## Why is the ported address wrong?
 This is possible since the application can't guarantee correctness so take results with a grain of salt. In the future this might improve but it is technically impossible to avoid those errors.
-
-## Where do I report bugs?
-[Here](issues).
