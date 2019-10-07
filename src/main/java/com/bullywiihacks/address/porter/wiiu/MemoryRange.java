@@ -1,30 +1,19 @@
 package com.bullywiihacks.address.porter.wiiu;
 
+import lombok.AllArgsConstructor;
+
+import static java.lang.Long.*;
+
+@AllArgsConstructor
 public class MemoryRange
 {
-	private int startingOffset;
-	private int endingOffset;
-
-	public MemoryRange(int startingOffset, int endingOffset)
-	{
-		this.startingOffset = startingOffset;
-		this.endingOffset = endingOffset;
-	}
-
-	public int getEndingOffset()
-	{
-		return endingOffset;
-	}
-
-	public int getStartingOffset()
-	{
-		return startingOffset;
-	}
+	private final int startingOffset;
+	private final int endingOffset;
 
 	@Override
 	public String toString()
 	{
-		return "[" + Integer.toHexString(startingOffset).toUpperCase()
-				+ ", " + Integer.toHexString(endingOffset).toUpperCase() + "]";
+		return "[0x" + toHexString(startingOffset).toUpperCase()
+				+ ", 0x" + toHexString(endingOffset).toUpperCase() + "]";
 	}
 }

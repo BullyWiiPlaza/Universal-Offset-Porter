@@ -3,6 +3,7 @@ package com.bullywiihacks.address.porter.wiiu.graphical_interface;
 import com.bullywiihacks.address.porter.wiiu.AssemblyChecker;
 import com.bullywiihacks.address.porter.wiiu.OffsetPorter;
 import com.bullywiihacks.address.porter.wiiu.OffsetPortingReport;
+import lombok.val;
 
 import javax.swing.*;
 import javax.swing.text.JTextComponent;
@@ -11,6 +12,8 @@ import java.io.File;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+
+import static com.bullywiihacks.address.porter.wiiu.graphical_interface.WindowUtilities.setWindowIconImage;
 
 public class UniversalOffsetPorterGUI extends JFrame
 {
@@ -262,7 +265,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 			new SwingWorker<String, String>()
 			{
 				@Override
-				protected String doInBackground() throws Exception
+				protected String doInBackground()
 				{
 					try
 					{
@@ -271,7 +274,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 						OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES = (int) getIntValue(maximumSearchTemplateTriesField);
 						AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD = getDoubleValue(assemblyNullBytesThresholdField);
 
-						OffsetPorter offsetPorter = new OffsetPorter(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset);
+						val offsetPorter = new OffsetPorter(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset);
 						OffsetPortingReport offsetPortingReport = offsetPorter.port();
 
 						if (offsetPortingReport == null)
@@ -311,7 +314,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 	private void setFrameProperties()
 	{
 		add(rootPanel);
-		WindowUtilities.setIconImage(this);
+		setWindowIconImage(this);
 		setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
 		setSize(700, 500);

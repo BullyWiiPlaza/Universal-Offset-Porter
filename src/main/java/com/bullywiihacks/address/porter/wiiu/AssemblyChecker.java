@@ -37,7 +37,7 @@ public class AssemblyChecker
 		}
 
 		val nullBytesRatio = nullBytesCount / (double) ASSEMBLY_NULL_BYTES_CHECK_SIZE;
-		LOGGER.info("Ratio: " + nullBytesRatio);
+		LOGGER.info("Null-bytes ratio: " + nullBytesRatio);
 		return nullBytesRatio < ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD;
 	}
 }

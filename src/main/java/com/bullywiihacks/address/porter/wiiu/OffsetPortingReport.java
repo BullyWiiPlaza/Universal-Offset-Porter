@@ -3,11 +3,11 @@ package com.bullywiihacks.address.porter.wiiu;
 import lombok.Getter;
 import lombok.val;
 
-import javax.xml.bind.DatatypeConverter;
 import java.util.List;
 
 import static java.lang.Long.toHexString;
 import static java.lang.Math.min;
+import static java.lang.String.*;
 import static java.lang.System.lineSeparator;
 
 public class OffsetPortingReport
@@ -25,6 +25,10 @@ public class OffsetPortingReport
 
 	private final MemoryRange memoryRange;
 	private double secondsElapsed;
+
+	private static final int MAXIMUM_SEARCH_TEMPLATE_LENGTH_CHARACTERS = 30;
+	private static final double MAXIMUM_SEARCH_TEMPLATE_LENGTH_FORMATTED = MAXIMUM_SEARCH_TEMPLATE_LENGTH_CHARACTERS
+			+ (MAXIMUM_SEARCH_TEMPLATE_LENGTH_CHARACTERS * 0.5);
 
 	OffsetPortingReport(int offset,
 	                    boolean isAssembly,
@@ -52,19 +56,34 @@ public class OffsetPortingReport
 		return byteArray;
 	}
 
+	private static String byteArrayToHex(byte[] byteArray)
+	{
+		val capacity = byteArray.length * 2;
+		val stringBuilder = new StringBuilder(capacity);
+		for (val singleByte : byteArray)
+		{
+			val format = format("%02x ", singleByte);
+			stringBuilder.append(format);
+		}
+
+		return stringBuilder.toString().trim();
+	}
+
 	@Override
 	public String toString()
 	{
-		val searchTemplateString = DatatypeConverter.printHexBinary(searchTemplate);
-		val portedOffsetString = address == FAILED_ADDRESS ? "FAILED" : toHexString(address).toUpperCase();
+		val searchTemplateString = byteArrayToHex(searchTemplate).toUpperCase();
+		val portedOffsetString = address == FAILED_ADDRESS ? "FAILED"
+				: "0x" + toHexString(address).toUpperCase();
 
-		return "Seconds Taken: " + secondsElapsed + lineSeparator()
-				+ "Assembly Offset: " + isAssembly + lineSeparator()
-				+ "Last Search Template: " + searchTemplateString.substring(0,
-				min(30, searchTemplateString.length()))
-				+ (searchTemplateString.length() > 30 ? " [...]" : "") + lineSeparator()
-				+ "Source Offset Shift Bytes: " + toHexString(shiftBytes).toUpperCase() + lineSeparator()
-				+ "Scanned Memory Range: " + memoryRange.toString() + lineSeparator()
-				+ "Ported Offset: " + portedOffsetString;
+		return "Seconds taken: " + secondsElapsed + lineSeparator()
+				+ "Is assembly offset: " + isAssembly + lineSeparator()
+				+ "Search template: " + searchTemplateString.substring(0,
+				(int) min(MAXIMUM_SEARCH_TEMPLATE_LENGTH_FORMATTED, searchTemplateString.length()))
+				+ (searchTemplateString.length() > MAXIMUM_SEARCH_TEMPLATE_LENGTH_FORMATTED
+				? " [...]" : "") + lineSeparator()
+				+ "Offset: 0x" + toHexString(shiftBytes).toUpperCase() + lineSeparator()
+				+ "Memory Range: " + memoryRange.toString() + lineSeparator()
+				+ "Ported offset: " + portedOffsetString;
 	}
 }
