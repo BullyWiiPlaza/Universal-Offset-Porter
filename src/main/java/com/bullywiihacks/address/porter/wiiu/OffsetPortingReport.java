@@ -75,6 +75,7 @@ public class OffsetPortingReport
 		val searchTemplateString = byteArrayToHex(searchTemplate).toUpperCase();
 		val portedOffsetString = address == FAILED_ADDRESS ? "FAILED"
 				: "0x" + toHexString(address).toUpperCase();
+		val hexadecimalOffset = numberToString(shiftBytes);
 
 		return "Seconds taken: " + secondsElapsed + lineSeparator()
 				+ "Is assembly offset: " + isAssembly + lineSeparator()
@@ -82,8 +83,22 @@ public class OffsetPortingReport
 				(int) min(MAXIMUM_SEARCH_TEMPLATE_LENGTH_FORMATTED, searchTemplateString.length()))
 				+ (searchTemplateString.length() > MAXIMUM_SEARCH_TEMPLATE_LENGTH_FORMATTED
 				? " [...]" : "") + lineSeparator()
-				+ "Offset: 0x" + toHexString(shiftBytes).toUpperCase() + lineSeparator()
+				+ "Offset: " + hexadecimalOffset + lineSeparator()
 				+ "Memory Range: " + memoryRange.toString() + lineSeparator()
 				+ "Ported offset: " + portedOffsetString;
+	}
+
+	private String numberToString(int value)
+	{
+		StringBuilder stringBuilder = new StringBuilder();
+		if (value < 0)
+		{
+			stringBuilder.append("-");
+			value *= -1;
+		}
+
+		stringBuilder.append("0x");
+		stringBuilder.append(toHexString(value).toUpperCase());
+		return stringBuilder.toString();
 	}
 }

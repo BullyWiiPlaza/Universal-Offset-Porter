@@ -59,9 +59,9 @@ public class UniversalOffsetPorterGUI extends JFrame
 		addSourceOffsetDocumentListener();
 		DefaultContextMenu.addDefaultContextMenu(resultsArea);
 		cancelPortingButton.addActionListener(actionEvent -> portingCanceled = true);
-		maximumSearchTemplateTriesField.setText("" + OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES);
-		offsetVarianceField.setText("" + OffsetPorter.DEFAULT_OFFSET_VARIANCE);
-		dataBytesUnequalThresholdField.setText("" + OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD);
+		// maximumSearchTemplateTriesField.setText("" + OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES);
+		// offsetVarianceField.setText("" + OffsetPorter.DEFAULT_OFFSET_VARIANCE);
+		// dataBytesUnequalThresholdField.setText("" + OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD);
 		assemblyNullBytesThresholdField.setText("" + AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD);
 
 		restorePersistentSettings();
@@ -269,9 +269,9 @@ public class UniversalOffsetPorterGUI extends JFrame
 				{
 					try
 					{
-						OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD = getDoubleValue(dataBytesUnequalThresholdField);
-						OffsetPorter.DEFAULT_OFFSET_VARIANCE = getDoubleValue(offsetVarianceField);
-						OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES = (int) getIntValue(maximumSearchTemplateTriesField);
+						// OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD = getDoubleValue(dataBytesUnequalThresholdField);
+						// OffsetPorter.DEFAULT_OFFSET_VARIANCE = getDoubleValue(offsetVarianceField);
+						// OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES = (int) getIntValue(maximumSearchTemplateTriesField);
 						AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD = getDoubleValue(assemblyNullBytesThresholdField);
 
 						val offsetPorter = new OffsetPorter(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset);

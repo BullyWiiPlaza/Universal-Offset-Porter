@@ -2,6 +2,7 @@ package com.bullywiihacks.address.porter.wii;
 
 import com.bullywiihacks.address.porter.wii.utilities.general.DebuggingPrints;
 import com.bullywiihacks.address.porter.wii.utilities.general.GeckoCode;
+import lombok.val;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -161,7 +162,7 @@ public class GeckoCodeParser
 
 	private int getLinesToSkip(String codeLine)
 	{
-		String additionalLines = codeLine.substring(codeLine.length() - 2);
+		val additionalLines = codeLine.substring(codeLine.length() - 2);
 		return Integer.parseInt(additionalLines, 16);
 	}
 

@@ -1,5 +1,4 @@
 import com.bullywiihacks.address.porter.wiiu.OffsetPorter;
-import com.bullywiihacks.address.porter.wiiu.OffsetPortingReport;
 import lombok.val;
 import org.junit.Test;
 
@@ -13,25 +12,24 @@ import static org.junit.Assert.assertTrue;
 
 public class TestOffsetPorting
 {
-	private OffsetPorter offsetPorter;
-	private OffsetPortingReport offsetPortingReport;
-
 	private static final Path MEMORY_DUMP_FILE_PATH = Paths.get("Memory Dumps");
 
-	@Test
+	/* @Test
 	public void portMarioKart8OldLayoutToNewLayout() throws IOException
 	{
 		portRegularValue();
 		portPointer();
 		// portPointer2();
-	}
+	} */
 
 	private void portRegularValue() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 New Layout.bin").toString(),
-				0x206C53D0, 0.01, false);
-		offsetPortingReport = offsetPorter.port();
+				0x206C53D0);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.01);
+		offsetPorter.setStepSize(4);
+		val offsetPortingReport = offsetPorter.port();
 
 		val returnedAddress = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(returnedAddress, 0x206C73D0);
@@ -41,10 +39,11 @@ public class TestOffsetPorting
 
 	private void portPointer() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 New Layout.bin").toString(),
-				0x2FB3E7E0, 0.01, false);
-		offsetPortingReport = offsetPorter.port();
+				0x2FB3E7E0);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.01);
+		val offsetPortingReport = offsetPorter.port();
 
 		val returnedAddress = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(returnedAddress, 0x2FB407E0);
@@ -67,10 +66,11 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToBlackOps2() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				0x5AA188, 0.5, false);
-		offsetPortingReport = offsetPorter.port();
+				0x5AA188);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.05);
+		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x5AA188);
 		assertTrue(offsetPortingReport.isAssembly());
@@ -79,10 +79,11 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToBlackOps2Shifted() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2 HBL Old.bin").toString(),
-				0x5AA188, 0.5, false);
-		offsetPortingReport = offsetPorter.port();
+				0x5AA188);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
+		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x5E5748);
 		assertTrue(offsetPortingReport.isAssembly());
@@ -91,10 +92,12 @@ public class TestOffsetPorting
 	@Test
 	public void portGhostsToBlackOps2() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				0x75A1C4, 0.5, false);
-		offsetPortingReport = offsetPorter.port();
+				0x75A1C4);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
+		offsetPorter.setStartingMatchingBytesCount(3);
+		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x5AA188);
 		assertTrue(offsetPortingReport.isAssembly());
@@ -103,25 +106,40 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToGhosts() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
 				MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString(),
-				0x5AA188, 0.5, false);
-		offsetPortingReport = offsetPorter.port();
-		int address = offsetPortingReport.getAddress();
+				0x5AA188);
+		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
+		offsetPorter.setStartingMatchingBytesCount(3);
+		val offsetPortingReport = offsetPorter.port();
+		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x75A1C4);
 		assertTrue(offsetPortingReport.isAssembly());
 	}
 
+	// Battle damage blocked: Template: 8D 0C D5 00 00 00 00 83 E1 1F -> 0x10
 	@Test
-	public void portDuelLinks() throws IOException
+	public void portDuelLinksBattleDamageBlocked() throws IOException
 	{
-		offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString(), 0xE4BE73,
-				0.0, true);
-		offsetPorter.setSearchTemplateBytesUnequalThreshold(0);
-		offsetPortingReport = offsetPorter.port();
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString(),
+				MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString(), 0xE4BE73);
+		offsetPorter.setReadAllBytes(true);
+		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x52F713);
+	}
+
+	// Sleeves Patcher: Template: B8 A0 0F 00 00 48 8B 7C 24 38 -> -0x5E
+	@Test
+	public void portDuelLinksSleevesPatcher() throws IOException
+	{
+		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString(),
+				MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString(), 0x32FC10);
+		offsetPorter.setMinimumAcceptedSearchTemplatesCount(2);
+		offsetPorter.setReadAllBytes(true);
+		val offsetPortingReport = offsetPorter.port();
+		val address = offsetPortingReport.getAddress();
+		assertHexadecimalEquals(address, 0x340890);
 	}
 
 	private void assertHexadecimalEquals(int actual, int expected)
@@ -129,8 +147,8 @@ public class TestOffsetPorting
 		if (actual != expected)
 		{
 			throw new AssertionError(lineSeparator() +
-					"Actual:\t\t" + Long.toHexString(actual).toUpperCase() + lineSeparator()
-					+ "Expected:\t" + Long.toHexString(expected).toUpperCase());
+					"Actual:\t\t0x" + Long.toHexString(actual).toUpperCase() + lineSeparator()
+					+ "Expected:\t0x" + Long.toHexString(expected).toUpperCase());
 		}
 	}
 }
