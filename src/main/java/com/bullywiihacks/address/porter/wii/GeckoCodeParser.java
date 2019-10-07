@@ -1,10 +1,10 @@
 package com.bullywiihacks.address.porter.wii;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import com.bullywiihacks.address.porter.wii.utilities.general.DebuggingPrints;
 import com.bullywiihacks.address.porter.wii.utilities.general.GeckoCode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GeckoCodeParser
 {
@@ -161,9 +161,7 @@ public class GeckoCodeParser
 
 	private int getLinesToSkip(String codeLine)
 	{
-		String additionalLines = codeLine.substring(codeLine.length() - 2,
-				codeLine.length());
-
+		String additionalLines = codeLine.substring(codeLine.length() - 2);
 		return Integer.parseInt(additionalLines, 16);
 	}
 
@@ -217,17 +215,17 @@ public class GeckoCodeParser
 	{
 		String portedCode = inputCode.substring(0, startingIndex);
 
-		while (portedCodeAddress.length() < 6)
+		StringBuilder portedCodeAddressBuilder = new StringBuilder(portedCodeAddress);
+		while (portedCodeAddressBuilder.length() < 6)
 		{
-			portedCodeAddress = "0" + portedCodeAddress;
+			portedCodeAddressBuilder.insert(0, "0");
 		}
+		portedCodeAddress = portedCodeAddressBuilder.toString();
 
 		portedCode = portedCode + portedCodeAddress;
 
 		portedCode = portedCode
-				+ inputCode.substring(
-				startingIndex + portedCodeAddress.length(),
-				inputCode.length());
+				+ inputCode.substring(startingIndex + portedCodeAddress.length());
 
 		DebuggingPrints.printLn("Ported code: " + System.lineSeparator()
 				+ portedCode);

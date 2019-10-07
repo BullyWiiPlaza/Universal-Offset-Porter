@@ -8,23 +8,60 @@
     <artifactId>Address-Porter</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <dependencies>
-        <dependency>
-            <groupId>com.jgoodies</groupId>
-            <artifactId>forms</artifactId>
-            <version>LATEST</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>LATEST</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
     <properties>
         <!-- maven-compiler-plugin configuration -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <!-- Apache 2.0 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.jgoodies/forms -->
+        <!-- BSD 2-clause -->
+        <dependency>
+            <groupId>com.jgoodies</groupId>
+            <artifactId>forms</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/junit/junit -->
+        <!-- EPL 1.0 -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <!-- Multi-Color Log -->
+        <!-- https://mvnrepository.com/artifact/com.jcabi/jcabi-log -->
+        <!-- BSD -->
+        <dependency>
+            <groupId>com.jcabi</groupId>
+            <artifactId>jcabi-log</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
+        <!-- Apache 2.0 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>LATEST</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+        <!-- Apache 2.0 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>LATEST</version>
+        </dependency>
+    </dependencies>
 </project>

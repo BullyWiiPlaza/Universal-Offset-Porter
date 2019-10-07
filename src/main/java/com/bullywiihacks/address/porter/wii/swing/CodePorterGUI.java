@@ -15,8 +15,6 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -30,6 +28,9 @@ import java.util.prefs.Preferences;
 
 public class CodePorterGUI
 {
+	private static String programVersion = "4.02";
+	private static String windowTitle = "Universal Code Offset Porter v" + programVersion;
+
 	private JFrame codePorterGUI;
 	private JTextField sourceDumpPath;
 	private JTextField destinationDumpPath;
@@ -37,8 +38,6 @@ public class CodePorterGUI
 	private Preferences guiEntries = Preferences.userRoot().node(
 			this.getClass().getName());
 	private DumpChooser chooser;
-	private String programVersion = "4.02";
-	private String windowTitle = "Wii Gecko Code Porter v" + programVersion;
 	private CodeAddressPorter codePorter = new CodeAddressPorter();
 	private JTextArea portedCodeArea;
 	private JButton portButton;
@@ -92,16 +91,13 @@ public class CodePorterGUI
 				"1, 2, 2, 1, center, default");
 
 		JButton sourceBrowseButton = new JButton("Browse...");
-		sourceBrowseButton.addActionListener(new ActionListener()
+		sourceBrowseButton.addActionListener(actionEvent ->
 		{
-			public void actionPerformed(ActionEvent actionEvent)
-			{
-				chooser = new DumpChooser(sourceDumpPath);
+			chooser = new DumpChooser(sourceDumpPath);
 
-				chooser.setCurrentDirectory();
+			chooser.setCurrentDirectory();
 
-				chooser.selectDump(codePorterGUI.getRootPane());
-			}
+			chooser.selectDump(codePorterGUI.getRootPane());
 		});
 		codePorterGUI.getContentPane().add(sourceBrowseButton, "1, 4, 2, 1");
 
@@ -123,12 +119,12 @@ public class CodePorterGUI
 				readDestinationRAMDump();
 			}
 
-			public void readDestinationRAMDump()
+			void readDestinationRAMDump()
 			{
 				new SwingWorker<String, String>()
 				{
 					@Override
-					protected String doInBackground() throws Exception
+					protected String doInBackground()
 					{
 						managePortButtonAvailability();
 
@@ -169,16 +165,13 @@ public class CodePorterGUI
 				"1, 8, 2, 1, center, bottom");
 
 		JButton destinationBrowseButton = new JButton("Browse...");
-		destinationBrowseButton.addActionListener(new ActionListener()
+		destinationBrowseButton.addActionListener(actionEvent ->
 		{
-			public void actionPerformed(ActionEvent arg0)
-			{
-				chooser = new DumpChooser(destinationDumpPath);
+			chooser = new DumpChooser(destinationDumpPath);
 
-				chooser.setCurrentDirectory();
+			chooser.setCurrentDirectory();
 
-				chooser.selectDump(codePorterGUI.getRootPane());
-			}
+			chooser.selectDump(codePorterGUI.getRootPane());
 		});
 		codePorterGUI.getContentPane().add(destinationBrowseButton,
 				"1, 10, 2, 1");
@@ -202,12 +195,12 @@ public class CodePorterGUI
 						readDestinationRAMDump();
 					}
 
-					public void readDestinationRAMDump()
+					void readDestinationRAMDump()
 					{
 						new SwingWorker<String, String>()
 						{
 							@Override
-							protected String doInBackground() throws Exception
+							protected String doInBackground()
 							{
 								managePortButtonAvailability();
 
@@ -258,81 +251,73 @@ public class CodePorterGUI
 		inputCodeArea.setText(guiEntries.get("ADDRESS", ""));
 
 		portButton.setToolTipText("Start porting the code");
-		portButton.addActionListener(new ActionListener()
+		portButton.addActionListener(actionEvent -> new SwingWorker<String, String>()
 		{
-			public void actionPerformed(ActionEvent arg0)
+			@Override
+			protected String doInBackground()
 			{
-				new SwingWorker<String, String>()
+				portButton.setEnabled(false);
+				portedCodeArea.setText("");
+
+				String codeToPort = inputCodeArea.getText();
+
+				GeckoCodeParser codeParser = new GeckoCodeParser(
+						codeToPort);
+
+				List<CodeAddress> codeAddresses = codeParser
+						.getCodeAddresses();
+				List<String> portedAddresses = new ArrayList<>();
+
+				for (CodeAddress codeAddress : codeAddresses)
 				{
-					@Override
-					protected String doInBackground() throws Exception
-					{
-						portButton.setEnabled(false);
-						portedCodeArea.setText("");
+					codePorter.setCodeAddress(codeAddress);
 
-						String codeToPort = inputCodeArea.getText();
-
-						GeckoCodeParser codeParser = new GeckoCodeParser(
-								codeToPort);
-
-						List<CodeAddress> codeAddresses = codeParser
-								.getCodeAddresses();
-						List<String> portedAddresses = new ArrayList<>();
-
-						for (int codeAddressIndex = 0; codeAddressIndex < codeAddresses
-								.size(); codeAddressIndex++)
-						{
-							codePorter.setCodeAddress(codeAddresses
-									.get(codeAddressIndex));
-
-							codePorterGUI.setTitle("Porting...");
+					codePorterGUI.setTitle("Porting...");
 
 //							double startingTime = System.currentTimeMillis();
 
-							int portedAddress = codePorter.portAddress();
+					int portedAddress = codePorter.portAddress();
 
 //							System.out.println(((System.currentTimeMillis() - startingTime) / 1000 + " seconds"));
 
-							if (portedAddress == -1)
-							{
-								codePorterGUI.setTitle(windowTitle);
-
-								portedAddresses.add("??????");
-							} else
-							{
-								String newPortedAddress = Integer.toHexString(
-										portedAddress).toUpperCase()
-										+ "";
-
-								if (newPortedAddress.length() == 7)
-								{
-									newPortedAddress = newPortedAddress
-											.substring(1);
-								}
-
-								portedAddresses.add(newPortedAddress);
-							}
-						}
-
-						codeParser.insertPortedAddresses(portedAddresses);
-
-						String portedCode = codeParser.getGeckoCode();
-
-						portedCodeArea.setText(portedCode);
-
+					if (portedAddress == -1)
+					{
 						codePorterGUI.setTitle(windowTitle);
 
-						return null;
-					}
-
-					@Override
-					protected void done()
+						portedAddresses.add("??????");
+					} else
 					{
-						portButton.setEnabled(true);
+						String newPortedAddress = Integer.toHexString(
+								portedAddress).toUpperCase()
+								+ "";
+
+						if (newPortedAddress.length() == 7)
+						{
+							newPortedAddress = newPortedAddress
+									.substring(1);
+						}
+
+						portedAddresses.add(newPortedAddress);
 					}
-				}.execute();
+				}
+
+				codeParser.insertPortedAddresses(portedAddresses);
+
+				String portedCode = codeParser.getGeckoCode();
+
+				portedCodeArea.setText(portedCode);
+
+				codePorterGUI.setTitle(windowTitle);
+
+				return null;
 			}
-		});
+
+			@Override
+			protected void done()
+			{
+				portButton.setEnabled(true);
+			}
+		}.execute());
 
 		JLabel portedAddressLabel = new JLabel("Ported Code:");
 		codePorterGUI.getContentPane().add(portedAddressLabel,
@@ -378,6 +363,7 @@ public class CodePorterGUI
 		}));
 	}
 
+	@SuppressWarnings("SameParameterValue")
 	private static void visit(String url)
 	{
 		Desktop desktop = Desktop.getDesktop();

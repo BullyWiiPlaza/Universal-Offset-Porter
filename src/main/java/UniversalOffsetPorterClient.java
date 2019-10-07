@@ -1,18 +1,19 @@
 import com.bullywiihacks.address.porter.wiiu.graphical_interface.UniversalOffsetPorterGUI;
+import lombok.val;
 
-import javax.swing.*;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import static javax.swing.SwingUtilities.invokeLater;
+import static javax.swing.UIManager.getSystemLookAndFeelClassName;
+import static javax.swing.UIManager.setLookAndFeel;
 
 public class UniversalOffsetPorterClient
 {
 	public static void main(String[] arguments) throws Exception
 	{
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		setLookAndFeel(getSystemLookAndFeelClassName());
 
-		SwingUtilities.invokeLater(() ->
+		invokeLater(() ->
 		{
-			UniversalOffsetPorterGUI universalOffsetPorterGUI = new UniversalOffsetPorterGUI();
+			val universalOffsetPorterGUI = UniversalOffsetPorterGUI.getInstance();
 			universalOffsetPorterGUI.setVisible(true);
 		});
 	}

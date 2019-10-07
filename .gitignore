@@ -1,11 +1,16 @@
+# IDEA configuration
+/.idea
+*.iml
+/Memory Dumps
+
 # Compiled classes
-\target
+/target
 
 # Memory dumps
 *.bin
 
 # Tests
-\src/test
+/src/test
 
 # Notes
 *.txt

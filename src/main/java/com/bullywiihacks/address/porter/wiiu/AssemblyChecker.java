@@ -1,27 +1,34 @@
 package com.bullywiihacks.address.porter.wiiu;
 
+import lombok.val;
+import lombok.var;
+import org.apache.logging.log4j.Logger;
+
+import static org.apache.logging.log4j.LogManager.getLogger;
+
 public class AssemblyChecker
 {
+	private static final Logger LOGGER = getLogger();
+
 	public static double ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD = 0.20;
 	private static final int ASSEMBLY_NULL_BYTES_CHECK_SIZE = 0x100;
 
 	/**
 	 * Detects whether the <code>offset</code> is an assembly instruction or not
 	 *
-	 * @param offset The offset to check
 	 * @return Whether this is an assembly instruction
 	 */
-	public static boolean isAssembly(byte[] sourceMemoryDump, int offset, int startingOffset)
+	static boolean isAssembly(byte[] sourceMemoryDump, int offset, int startingOffset)
 	{
-		int nullBytesCount = 0;
-		int checkSizeShift = ASSEMBLY_NULL_BYTES_CHECK_SIZE / 2;
+		var nullBytesCount = 0;
+		val checkSizeShift = ASSEMBLY_NULL_BYTES_CHECK_SIZE / 2;
 
 		// Check the interval around the offset for null bytes
-		for (int sourceBytesIndex = Math.max(offset - startingOffset - checkSizeShift, 0);
+		for (var sourceBytesIndex = Math.max(offset - startingOffset - checkSizeShift, 0);
 		     sourceBytesIndex < Math.min(offset - startingOffset + checkSizeShift, sourceMemoryDump.length);
 		     sourceBytesIndex++)
 		{
-			byte sourceByte = sourceMemoryDump[sourceBytesIndex];
+			val sourceByte = sourceMemoryDump[sourceBytesIndex];
 
 			if (sourceByte == 0x00)
 			{
@@ -29,8 +36,8 @@ public class AssemblyChecker
 			}
 		}
 
-		double nullBytesRatio = nullBytesCount / (double) ASSEMBLY_NULL_BYTES_CHECK_SIZE;
-		System.out.println("Ratio: " + nullBytesRatio);
+		val nullBytesRatio = nullBytesCount / (double) ASSEMBLY_NULL_BYTES_CHECK_SIZE;
+		LOGGER.info("Ratio: " + nullBytesRatio);
 		return nullBytesRatio < ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD;
 	}
 }

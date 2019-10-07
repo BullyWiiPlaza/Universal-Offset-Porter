@@ -1,12 +1,24 @@
 package com.bullywiihacks.address.porter.wiiu;
 
-import javax.xml.bind.DatatypeConverter;
+import com.bullywiihacks.address.porter.wiiu.graphical_interface.UniversalOffsetPorterGUI;
+import lombok.val;
+import lombok.var;
+import org.apache.logging.log4j.Logger;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.bullywiihacks.address.porter.wiiu.AssemblyChecker.isAssembly;
+import static java.lang.Integer.toHexString;
+import static javax.xml.bind.DatatypeConverter.printHexBinary;
+import static org.apache.commons.io.FilenameUtils.getName;
+import static org.apache.logging.log4j.LogManager.getLogger;
+
 public class OffsetPorter
 {
+	private static final Logger LOGGER = getLogger();
+
 	private static final int STARTING_MATCHING_BYTES_COUNT = 1;
 	private static final int STARTING_OFFSET_SHIFT_BYTES = 0;
 	public static int MAXIMUM_SEARCH_TEMPLATE_TRIES = 1000;
@@ -14,6 +26,8 @@ public class OffsetPorter
 	public static double DEFAULT_OFFSET_VARIANCE = 0.05;
 
 	private int offsetAlignment;
+	private final String sourceMemoryDumpFilePath;
+	private final String destinationMemoryDumpFilePath;
 	private byte[] sourceMemoryDump;
 	private byte[] destinationMemoryDump;
 	private int matchingBytesCount;
@@ -23,38 +37,43 @@ public class OffsetPorter
 	private boolean isAssembly;
 	private double offsetVariancePercentage;
 
-	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath, int sourceOffset, double variance) throws IOException
+	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath,
+	                    int sourceOffset, double variance) throws IOException
 	{
 		offsetAlignment = sourceOffset % 4;
 		this.sourceOffset = sourceOffset;
 		this.offsetVariancePercentage = variance;
 
+		this.sourceMemoryDumpFilePath = sourceMemoryDumpFilePath;
+		this.destinationMemoryDumpFilePath = destinationMemoryDumpFilePath;
+
 		sourceMemoryDump = readBytes(sourceMemoryDumpFilePath);
 		destinationMemoryDump = readBytes(destinationMemoryDumpFilePath);
 
-		isAssembly = AssemblyChecker.isAssembly(sourceMemoryDump, sourceOffset, getStartingOffset());
+		isAssembly = isAssembly(sourceMemoryDump, sourceOffset, getStartingOffset());
 
 		matchingBytesCount = STARTING_MATCHING_BYTES_COUNT;
 		offsetShiftBytes = STARTING_OFFSET_SHIFT_BYTES;
 		maximumTriesCount = MAXIMUM_SEARCH_TEMPLATE_TRIES;
 	}
 
-	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath, int sourceOffset) throws IOException
+	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath,
+	                    int sourceOffset) throws IOException
 	{
 		this(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset, DEFAULT_OFFSET_VARIANCE);
 	}
 
 	private byte[] readBytes(String sourceMemoryDumpFilePath) throws IOException
 	{
-		int startOffset = getStartingOffset();
-		int endingOffset = getEndingOffset();
+		val startOffset = getStartingOffset();
+		val endingOffset = getEndingOffset();
 
 		return FileReadingUtilities.readBytes(sourceMemoryDumpFilePath, startOffset, endingOffset);
 	}
 
 	private int getEndingOffset()
 	{
-		int endingOffset = (int) (sourceOffset + sourceOffset * offsetVariancePercentage);
+		var endingOffset = (int) (sourceOffset + sourceOffset * offsetVariancePercentage);
 		endingOffset += endingOffset % 4;
 
 		return endingOffset;
@@ -62,7 +81,7 @@ public class OffsetPorter
 
 	private int getStartingOffset()
 	{
-		int startingOffset = (int) (sourceOffset - sourceOffset * offsetVariancePercentage);
+		var startingOffset = (int) (sourceOffset - sourceOffset * offsetVariancePercentage);
 		startingOffset -= startingOffset % 4;
 
 		return startingOffset;
@@ -75,12 +94,16 @@ public class OffsetPorter
 	 */
 	public OffsetPortingReport port()
 	{
-		long startingTime = System.currentTimeMillis();
-		System.out.println("Is assembly: " + isAssembly);
+		LOGGER.info("Porting source offset 0x"
+				+ Long.toHexString(sourceOffset).toUpperCase() + " from "
+				+ getName(sourceMemoryDumpFilePath) + " to " + getName(destinationMemoryDumpFilePath) + "...");
 
-		List<Integer> destinationTemplateMatches = new ArrayList<>();
-		List<Integer> sourceTemplateMatches = new ArrayList<>();
-		int currentTries = 0;
+		val startingTime = System.currentTimeMillis();
+		LOGGER.info("Is assembly: " + isAssembly);
+
+		val destinationTemplateMatches = new ArrayList<Integer>();
+		var sourceTemplateMatches = new ArrayList<Integer>();
+		var currentTries = 0;
 		List<Byte> searchTemplate = null;
 
 		// Iterate till only one search template result is found in both memory dumps
@@ -92,10 +115,17 @@ public class OffsetPorter
 			destinationTemplateMatches.clear();
 
 			// Get the current search template
-			searchTemplate = getSearchTemplate();
+			val currentSearchTemplate = getSearchTemplate();
+
+			if (currentSearchTemplate == null)
+			{
+				break;
+			}
+
+			searchTemplate = currentSearchTemplate;
 
 			findTemplateMatches(sourceMemoryDump, sourceTemplateMatches, searchTemplate);
-			System.out.println("Ported addresses source: " + sourceTemplateMatches.size());
+			LOGGER.info("Source template matches count: " + sourceTemplateMatches.size());
 
 			if (sourceTemplateMatches.size() == 0)
 			{
@@ -109,28 +139,35 @@ public class OffsetPorter
 					handleNoResultsFound(currentTries);
 				}
 
-				System.out.println("Ported addresses destination: " + destinationTemplateMatches.size());
+				LOGGER.info("Destination template matches count: " + destinationTemplateMatches.size());
 			}
+
 
 			// Porting failed?
 			if (currentTries == maximumTriesCount)
 			{
-				return null;
+				break;
 			}
 
 			currentTries++;
-			System.out.println("Tries: " + currentTries);
+			LOGGER.info("Amount of tries: " + currentTries);
+
+			if (UniversalOffsetPorterGUI.getInstance().isPortingCanceled())
+			{
+				return null;
+			}
 		}
 
-		long endingTime = System.currentTimeMillis();
-		double timeElapsed = (endingTime - startingTime) / (double) 1000;
+		val endingTime = System.currentTimeMillis();
+		val timeElapsed = (endingTime - startingTime) / (double) 1000;
 
 		// Return the only result
-		int ported = destinationTemplateMatches.get(0);
-		MemoryRange memoryRange = new MemoryRange(getStartingOffset(), getEndingOffset());
-		OffsetPortingReport offsetPortingReport = new OffsetPortingReport(ported, isAssembly, memoryRange, searchTemplate, offsetShiftBytes, timeElapsed);
-		System.out.println("------");
-		System.out.println(offsetPortingReport);
+		val ported = destinationTemplateMatches.size() > 0 ? destinationTemplateMatches.get(0) : -1;
+		val memoryRange = new MemoryRange(getStartingOffset(), getEndingOffset());
+		val offsetPortingReport = new OffsetPortingReport(ported, isAssembly, memoryRange,
+				searchTemplate, offsetShiftBytes, timeElapsed);
+		LOGGER.info("------");
+		LOGGER.info(offsetPortingReport);
 
 		return offsetPortingReport;
 	}
@@ -176,7 +213,7 @@ public class OffsetPorter
 			offsetShiftBytes -= getStepSize();
 		}
 
-		System.out.println("Shift Bytes: " + Integer.toHexString(offsetShiftBytes).toUpperCase());
+		LOGGER.info("Shift Bytes: " + toHexString(offsetShiftBytes).toUpperCase());
 
 		// Also reset the matching assembly instructions count to most likely get results again
 		matchingBytesCount = STARTING_MATCHING_BYTES_COUNT;
@@ -234,7 +271,15 @@ public class OffsetPorter
 		     searchTemplateBytesIndex++)
 		{
 			int startingOffset = getStartingOffset();
-			int sourceIndex = sourceOffset - startingOffset + offsetShiftBytes + searchTemplateBytesIndex * getStepSize();
+			int sourceIndex = sourceOffset - startingOffset + offsetShiftBytes
+					+ searchTemplateBytesIndex * getStepSize();
+
+			// Not enough bytes left
+			if (sourceIndex >= sourceMemoryDump.length - 1)
+			{
+				return null;
+			}
+
 			Byte sourceByte = sourceMemoryDump[sourceIndex];
 			searchTemplate.add(sourceByte);
 		}
@@ -245,8 +290,8 @@ public class OffsetPorter
 			byteArray[index] = searchTemplate.get(index);
 		}
 
-		System.out.println("Search Template: " + DatatypeConverter.printHexBinary(byteArray));
-		System.out.println("Search Template Length: " + Integer.toHexString(searchTemplate.size()).toUpperCase());
+		LOGGER.info("Search Template: " + printHexBinary(byteArray));
+		LOGGER.info("Search Template Length: " + toHexString(searchTemplate.size()).toUpperCase());
 
 		return searchTemplate;
 	}

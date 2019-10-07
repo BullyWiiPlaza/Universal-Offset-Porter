@@ -24,7 +24,7 @@
               <text value="Maximum Tries:"/>
             </properties>
           </component>
-          <component id="a1113" class="javax.swing.JFormattedTextField" binding="maximumSearchTemplateTriesField">
+          <component id="b845d" class="javax.swing.JTextField" binding="maximumSearchTemplateTriesField">
             <constraints>
               <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
                 <preferred-size width="150" height="-1"/>
@@ -42,7 +42,7 @@
               <text value="Offset Variance:"/>
             </properties>
           </component>
-          <component id="48cec" class="javax.swing.JFormattedTextField" binding="offsetVarianceField">
+          <component id="ffe86" class="javax.swing.JTextField" binding="offsetVarianceField">
             <constraints>
               <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
                 <preferred-size width="150" height="-1"/>
@@ -60,7 +60,7 @@
               <text value="Data Bytes Template Accuracy:"/>
             </properties>
           </component>
-          <component id="f2478" class="javax.swing.JFormattedTextField" binding="dataBytesUnequalThresholdField">
+          <component id="37023" class="javax.swing.JTextField" binding="dataBytesUnequalThresholdField">
             <constraints>
               <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
                 <preferred-size width="150" height="-1"/>
@@ -78,7 +78,7 @@
               <text value="Assembly Null Bytes Threshold:"/>
             </properties>
           </component>
-          <component id="bd349" class="javax.swing.JFormattedTextField" binding="assemblyNullBytesThresholdField">
+          <component id="f35d2" class="javax.swing.JTextField" binding="assemblyNullBytesThresholdField">
             <constraints>
               <grid row="2" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
                 <preferred-size width="150" height="-1"/>
@@ -224,7 +224,7 @@
               </component>
             </children>
           </scrollpane>
-          <grid id="f47" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+          <grid id="f47" layout-manager="GridLayoutManager" row-count="1" column-count="3" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="0" left="0" bottom="0" right="0"/>
             <constraints>
               <grid row="2" column="0" row-span="1" col-span="2" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -243,11 +243,19 @@
               </component>
               <component id="a3fd4" class="javax.swing.JButton" binding="informationButton" default-binding="true">
                 <constraints>
-                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                  <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
                   <text value="Information"/>
                   <toolTipText value="Visits the GitHub repository page"/>
+                </properties>
+              </component>
+              <component id="31d78" class="javax.swing.JButton" binding="cancelPortingButton">
+                <constraints>
+                  <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <text value="Cancel"/>
                 </properties>
               </component>
             </children>

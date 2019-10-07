@@ -20,19 +20,32 @@ public class UniversalOffsetPorterGUI extends JFrame
 	private JTextField destinationMemoryDumpField;
 	private JButton browseSourceMemoryDumpButton;
 	private JButton browseDestinationMemoryDumpButton;
-	private JFormattedTextField maximumSearchTemplateTriesField;
-	private JFormattedTextField dataBytesUnequalThresholdField;
-	private JFormattedTextField offsetVarianceField;
-	private JFormattedTextField assemblyNullBytesThresholdField;
+	private JTextField maximumSearchTemplateTriesField;
+	private JTextField dataBytesUnequalThresholdField;
+	private JTextField offsetVarianceField;
+	private JTextField assemblyNullBytesThresholdField;
 	private JFormattedTextField sourceOffsetField;
 	private JTextArea resultsArea;
 	private JButton portButton;
 	private JButton informationButton;
+	private JButton cancelPortingButton;
 	private boolean porting;
-
 	private PersistentSettings persistentSettings;
+	private boolean portingCanceled;
 
-	public UniversalOffsetPorterGUI()
+	private static UniversalOffsetPorterGUI instance;
+
+	public static UniversalOffsetPorterGUI getInstance()
+	{
+		if (instance == null)
+		{
+			instance = new UniversalOffsetPorterGUI();
+		}
+
+		return instance;
+	}
+
+	private UniversalOffsetPorterGUI()
 	{
 		persistentSettings = new PersistentSettings();
 		setFrameProperties();
@@ -42,11 +55,11 @@ public class UniversalOffsetPorterGUI extends JFrame
 		addBrowseDestinationMemoryDumpListener();
 		addSourceOffsetDocumentListener();
 		DefaultContextMenu.addDefaultContextMenu(resultsArea);
-
-		maximumSearchTemplateTriesField.setValue(OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES);
-		offsetVarianceField.setValue(OffsetPorter.DEFAULT_OFFSET_VARIANCE);
-		dataBytesUnequalThresholdField.setValue(OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD);
-		assemblyNullBytesThresholdField.setValue(AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD);
+		cancelPortingButton.addActionListener(actionEvent -> portingCanceled = true);
+		maximumSearchTemplateTriesField.setText("" + OffsetPorter.MAXIMUM_SEARCH_TEMPLATE_TRIES);
+		offsetVarianceField.setText("" + OffsetPorter.DEFAULT_OFFSET_VARIANCE);
+		dataBytesUnequalThresholdField.setText("" + OffsetPorter.DATA_BYTES_UNEQUAL_THRESHOLD);
+		assemblyNullBytesThresholdField.setText("" + AssemblyChecker.ASSEMBLY_NULL_BYTES_RATIO_THRESHOLD);
 
 		restorePersistentSettings();
 		addPersistentSettingsBackupShutdownHook();
@@ -148,6 +161,12 @@ public class UniversalOffsetPorterGUI extends JFrame
 	private long getIntValue(JTextComponent textComponent)
 	{
 		String value = textComponent.getText().replace(",", "");
+		String prefix = "0x";
+
+		if (value.startsWith(prefix))
+		{
+			value = value.substring(prefix.length());
+		}
 
 		if (value.equals(""))
 		{
@@ -193,18 +212,19 @@ public class UniversalOffsetPorterGUI extends JFrame
 		{
 			while (true)
 			{
-				setBackgroundColor(sourceMemoryDumpField);
-				setBackgroundColor(destinationMemoryDumpField);
-				boolean validMemoryDumps = isValidFile(sourceMemoryDumpField)
-						&& isValidFile(destinationMemoryDumpField);
-				validateSourceOffset();
-				boolean isSourceOffsetValid = isSourceOffsetValid();
-				portButton.setEnabled(validMemoryDumps && isSourceOffsetValid && !porting);
-
 				try
 				{
+					setBackgroundColor(sourceMemoryDumpField);
+					setBackgroundColor(destinationMemoryDumpField);
+					boolean validMemoryDumps = isValidFile(sourceMemoryDumpField)
+							&& isValidFile(destinationMemoryDumpField);
+					validateSourceOffset();
+					boolean isSourceOffsetValid = isSourceOffsetValid();
+					portButton.setEnabled(validMemoryDumps && isSourceOffsetValid && !porting);
+					cancelPortingButton.setEnabled(porting);
+
 					Thread.sleep(10);
-				} catch (InterruptedException exception)
+				} catch (Exception exception)
 				{
 					exception.printStackTrace();
 				}
@@ -234,6 +254,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 			String sourceMemoryDumpFilePath = sourceMemoryDumpField.getText();
 			String destinationMemoryDumpFilePath = destinationMemoryDumpField.getText();
 			int sourceOffset = Integer.parseUnsignedInt(sourceOffsetField.getText(), 16);
+			resultsArea.setText("");
 			String portButtonText = portButton.getText();
 			portButton.setText("Porting...");
 			porting = true;
@@ -252,7 +273,23 @@ public class UniversalOffsetPorterGUI extends JFrame
 
 						OffsetPorter offsetPorter = new OffsetPorter(sourceMemoryDumpFilePath, destinationMemoryDumpFilePath, sourceOffset);
 						OffsetPortingReport offsetPortingReport = offsetPorter.port();
-						resultsArea.setText(offsetPortingReport.toString());
+
+						if (offsetPortingReport == null)
+						{
+							portingCanceled = false;
+						} else
+						{
+							if (offsetPortingReport.getAddress() == OffsetPortingReport.FAILED_ADDRESS)
+							{
+								JOptionPane.showMessageDialog(rootPane,
+										offsetPortingReport.toString(),
+										"Porting Failed",
+										JOptionPane.ERROR_MESSAGE);
+							} else
+							{
+								resultsArea.setText(offsetPortingReport.toString());
+							}
+						}
 					} catch (Exception exception)
 					{
 						exception.printStackTrace();
@@ -279,5 +316,10 @@ public class UniversalOffsetPorterGUI extends JFrame
 		setLocationRelativeTo(null);
 		setSize(700, 500);
 		setTitle("Universal Offset Porter by BullyWiiPlaza");
+	}
+
+	public boolean isPortingCanceled()
+	{
+		return portingCanceled;
 	}
 }
