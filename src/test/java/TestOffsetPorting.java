@@ -1,3 +1,4 @@
+import com.bullywiihacks.address.porter.wiiu.AddressRange;
 import com.bullywiihacks.address.porter.wiiu.OffsetPorter;
 import lombok.val;
 import org.junit.Test;
@@ -13,6 +14,13 @@ import static org.junit.Assert.assertTrue;
 public class TestOffsetPorting
 {
 	private static final Path MEMORY_DUMP_FILE_PATH = Paths.get("Memory Dumps");
+	private static final String GHOSTS_SOURCE_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString();
+	private static final String BLACK_OPS_II_SOURCE_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString();
+	private static final String BLACK_OPS_II_DESTINATION_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2 HBL Old.bin").toString();
+	private static final String MARIO_KART_8_SOURCE_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString();
+	private static final String MARIO_KART_8_DESTINATION_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 New Layout.bin").toString();
+	private static final String DUEL_LINKS_SOURCE_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString();
+	private static final String DUEL_LINKS_DESTINATION_MEMORY_DUMP = MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString();
 
 	/* @Test
 	public void portMarioKart8OldLayoutToNewLayout() throws IOException
@@ -24,9 +32,8 @@ public class TestOffsetPorting
 
 	private void portRegularValue() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 New Layout.bin").toString(),
-				0x206C53D0);
+		val offsetPorter = new OffsetPorter(MARIO_KART_8_SOURCE_MEMORY_DUMP,
+				MARIO_KART_8_DESTINATION_MEMORY_DUMP, 0x206C53D0);
 		offsetPorter.setFileOffsetsIntervalPercentage(0.01);
 		offsetPorter.setStepSize(4);
 		val offsetPortingReport = offsetPorter.port();
@@ -39,9 +46,8 @@ public class TestOffsetPorting
 
 	private void portPointer() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 Old Layout.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Mario Kart 8 New Layout.bin").toString(),
-				0x2FB3E7E0);
+		val offsetPorter = new OffsetPorter(MARIO_KART_8_SOURCE_MEMORY_DUMP,
+				MARIO_KART_8_DESTINATION_MEMORY_DUMP, 0x2FB3E7E0);
 		offsetPorter.setFileOffsetsIntervalPercentage(0.01);
 		val offsetPortingReport = offsetPorter.port();
 
@@ -66,10 +72,8 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToBlackOps2() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				0x5AA188);
-		offsetPorter.setFileOffsetsIntervalPercentage(0.05);
+		val offsetPorter = new OffsetPorter(BLACK_OPS_II_SOURCE_MEMORY_DUMP,
+				BLACK_OPS_II_SOURCE_MEMORY_DUMP, 0x5AA188);
 		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x5AA188);
@@ -79,9 +83,8 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToBlackOps2Shifted() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2 HBL Old.bin").toString(),
-				0x5AA188);
+		val offsetPorter = new OffsetPorter(BLACK_OPS_II_SOURCE_MEMORY_DUMP,
+				BLACK_OPS_II_DESTINATION_MEMORY_DUMP, 0x5AA188);
 		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
 		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
@@ -92,9 +95,8 @@ public class TestOffsetPorting
 	@Test
 	public void portGhostsToBlackOps2() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				0x75A1C4);
+		val offsetPorter = new OffsetPorter(GHOSTS_SOURCE_MEMORY_DUMP,
+				BLACK_OPS_II_SOURCE_MEMORY_DUMP, 0x75A1C4);
 		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
 		offsetPorter.setStartingMatchingBytesCount(3);
 		val offsetPortingReport = offsetPorter.port();
@@ -106,9 +108,8 @@ public class TestOffsetPorting
 	@Test
 	public void portBlackOps2ToGhosts() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("Black Ops 2.bin").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("Ghosts.bin").toString(),
-				0x5AA188);
+		val offsetPorter = new OffsetPorter(BLACK_OPS_II_SOURCE_MEMORY_DUMP,
+				GHOSTS_SOURCE_MEMORY_DUMP, 0x5AA188);
 		offsetPorter.setFileOffsetsIntervalPercentage(0.5);
 		offsetPorter.setStartingMatchingBytesCount(3);
 		val offsetPortingReport = offsetPorter.port();
@@ -121,9 +122,11 @@ public class TestOffsetPorting
 	@Test
 	public void portDuelLinksBattleDamageBlocked() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString(), 0xE4BE73);
+		val offsetPorter = new OffsetPorter(DUEL_LINKS_SOURCE_MEMORY_DUMP,
+				DUEL_LINKS_DESTINATION_MEMORY_DUMP, 0xE4BE73);
 		offsetPorter.setReadAllBytes(true);
+		val acceptedOffsetRange = new AddressRange(0x500000, 0x600000);
+		offsetPorter.setAcceptedOffsetRange(acceptedOffsetRange);
 		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();
 		assertHexadecimalEquals(address, 0x52F713);
@@ -133,9 +136,11 @@ public class TestOffsetPorting
 	@Test
 	public void portDuelLinksSleevesPatcher() throws IOException
 	{
-		val offsetPorter = new OffsetPorter(MEMORY_DUMP_FILE_PATH.resolve("GameAssembly3.10.0.dll").toString(),
-				MEMORY_DUMP_FILE_PATH.resolve("GameAssembly4.0.0.dll").toString(), 0x32FC10);
+		val offsetPorter = new OffsetPorter(DUEL_LINKS_SOURCE_MEMORY_DUMP,
+				DUEL_LINKS_DESTINATION_MEMORY_DUMP, 0x32FC10);
 		offsetPorter.setMinimumAcceptedSearchTemplatesCount(2);
+		val acceptedOffsetRange = new AddressRange(0x300000, 0x400000);
+		offsetPorter.setAcceptedOffsetRange(acceptedOffsetRange);
 		offsetPorter.setReadAllBytes(true);
 		val offsetPortingReport = offsetPorter.port();
 		val address = offsetPortingReport.getAddress();

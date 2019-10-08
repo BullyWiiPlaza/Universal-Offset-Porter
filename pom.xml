@@ -71,5 +71,14 @@
             <artifactId>commons-codec</artifactId>
             <version>LATEST</version>
         </dependency>
+
+        <!-- StopWatch -->
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <!-- Apache 2.0 -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>LATEST</version>
+        </dependency>
     </dependencies>
 </project>

@@ -1,6 +1,7 @@
 package com.bullywiihacks.address.porter.wiiu;
 
 import com.bullywiihacks.address.porter.wiiu.graphical_interface.UniversalOffsetPorterGUI;
+import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
@@ -10,15 +11,15 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.bullywiihacks.address.porter.wiiu.AssemblyChecker.isAssembly;
-import static java.lang.Integer.toHexString;
-import static java.lang.System.currentTimeMillis;
+import static com.bullywiihacks.address.porter.wiiu.Conversions.byteArrayToHexadecimal;
+import static com.bullywiihacks.address.porter.wiiu.Conversions.numberToHexadecimal;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.readAllBytes;
 import static java.nio.file.Files.size;
-import static org.apache.commons.codec.binary.Hex.encodeHexString;
 import static org.apache.commons.io.FilenameUtils.getName;
 import static org.apache.logging.log4j.LogManager.getLogger;
 
@@ -26,16 +27,25 @@ public class OffsetPorter
 {
 	private static final Logger LOGGER = getLogger();
 
-	// TODO: Only take the same destination addresses into account
 	// The minimum amount of accepted search templates before the port is considered successful
 	@Getter
 	@Setter
 	private int minimumAcceptedSearchTemplatesCount = 1;
 
+	// Only accept offsets in this particular range
+	@Getter
+	@Setter
+	private AddressRange acceptedOffsetRange = null;
+
 	// The search template bytes count to start at
 	@Getter
 	@Setter
 	private int startingMatchingBytesCount = 4;
+
+	// The search template bytes count to start at
+	@Getter
+	@Setter
+	private int maximumSearchTemplateLength = 10;
 
 	// The search template offset to start at
 	@Getter
@@ -73,17 +83,24 @@ public class OffsetPorter
 	@Setter
 	private int stepSize = 1;
 
+	// The direction to iterate first
+	@Getter
+	@Setter
+	private SearchDirection startingSearchDirection = SearchDirection.POSITIVE;
+
 	private int startingOffset;
 	private int endingOffset;
-	private int offsetAlignment;
 	private final String sourceMemoryDumpFilePath;
 	private final String destinationMemoryDumpFilePath;
 	private byte[] sourceMemoryDump;
 	private int matchingBytesCount;
-	private int offsetShiftBytes;
+	private int searchTemplateOffset;
 	private int maximumTriesCount;
 	private int sourceOffset;
 	private boolean isAssembly;
+	private int currentTries;
+	private SearchDirection searchDirection;
+	private SearchDirection reverseSearchDirection;
 
 	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath,
 	                    int sourceOffset)
@@ -105,13 +122,13 @@ public class OffsetPorter
 	 */
 	public OffsetPortingReport port() throws IOException
 	{
-		val startingTime = currentTimeMillis();
+		val portingTimer = Stopwatch.createStarted();
 
+		searchDirection = startingSearchDirection;
+		reverseSearchDirection = startingSearchDirection.invert();
 		matchingBytesCount = startingMatchingBytesCount;
-		offsetShiftBytes = startingSearchTemplateOffset;
+		searchTemplateOffset = startingSearchTemplateOffset;
 		maximumTriesCount = maximumSearchTemplateTries;
-
-		offsetAlignment = sourceOffset % stepSize;
 
 		if (readAllBytes)
 		{
@@ -140,10 +157,10 @@ public class OffsetPorter
 
 		val destinationTemplateMatches = new ArrayList<Integer>();
 		var sourceTemplateMatches = new ArrayList<Integer>();
-		var currentTries = 0;
+		currentTries = 0;
 		List<Byte> searchTemplate = null;
 
-		var acceptedSearchTemplateCount = 0;
+		val matchedDestinationAddresses = new HashMap<Integer, Integer>();
 		// Iterate till only one search template result is found in both memory dumps
 		while (sourceTemplateMatches.size() != 1
 				|| destinationTemplateMatches.size() != 1)
@@ -154,7 +171,6 @@ public class OffsetPorter
 
 			// Get the current search template
 			val currentSearchTemplate = getSearchTemplate();
-
 			if (currentSearchTemplate == null)
 			{
 				break;
@@ -167,14 +183,14 @@ public class OffsetPorter
 
 			if (sourceTemplateMatches.size() == 0)
 			{
-				handleNoResultsFound(currentTries);
+				handleNoResultsFound();
 			} else if (sourceTemplateMatches.size() == 1)
 			{
 				findTemplateMatches(destinationMemoryDump, destinationTemplateMatches, searchTemplate);
 
 				if (destinationTemplateMatches.size() == 0)
 				{
-					handleNoResultsFound(currentTries);
+					handleNoResultsFound();
 				}
 
 				LOGGER.info("Destination template matches count: " + destinationTemplateMatches.size());
@@ -182,15 +198,28 @@ public class OffsetPorter
 
 			if (sourceTemplateMatches.size() == 1 && destinationTemplateMatches.size() == 1)
 			{
-				acceptedSearchTemplateCount++;
-				LOGGER.info("Accepted search templates count: " + acceptedSearchTemplateCount);
+				val destinationTemplateMatch = destinationTemplateMatches.get(0);
+				var matchesCount = 0;
 
-				if (acceptedSearchTemplateCount < minimumAcceptedSearchTemplatesCount)
+				if (acceptedOffsetRange == null || acceptedOffsetRange.contains(destinationTemplateMatch))
+				{
+					LOGGER.info("Adding destination address " + numberToHexadecimal(destinationTemplateMatch) + "...");
+					addDestinationAddress(matchedDestinationAddresses, destinationTemplateMatch);
+
+					matchesCount = matchedDestinationAddresses.get(destinationTemplateMatch);
+					LOGGER.info("Destination address " + numberToHexadecimal(destinationTemplateMatch)
+							+ " has " + matchesCount + " match(es)...");
+				} else
+				{
+					LOGGER.info("Skipped adding destination address " + numberToHexadecimal(destinationTemplateMatch) + "...");
+				}
+
+				if (matchesCount < minimumAcceptedSearchTemplatesCount)
 				{
 					sourceTemplateMatches.clear();
 					destinationTemplateMatches.clear();
 
-					handleNoResultsFound(currentTries);
+					handleNoResultsFound();
 				}
 			}
 
@@ -202,73 +231,88 @@ public class OffsetPorter
 				return null;
 			}
 
-			// Porting failed?
 			if (currentTries == maximumTriesCount)
 			{
-				break;
+				LOGGER.error("Maximum tries of " + maximumTriesCount + " exceeded: Porting failed");
+				return null;
 			}
 		}
 
-		val endingTime = currentTimeMillis();
-		val timeElapsed = (endingTime - startingTime) / (double) 1000;
+		LOGGER.info("Porting took " + portingTimer);
 
 		// Return the only result
 		val ported = destinationTemplateMatches.size() > 0 ? destinationTemplateMatches.get(0) : -1;
 		val memoryRange = new MemoryRange(startingOffset, endingOffset);
 		val offsetPortingReport = new OffsetPortingReport(ported, isAssembly, memoryRange,
-				searchTemplate, -1 * offsetShiftBytes, timeElapsed);
+				searchTemplate, -1 * searchTemplateOffset);
 		LOGGER.info(offsetPortingReport);
 
 		return offsetPortingReport;
 	}
 
+	private void addDestinationAddress(HashMap<Integer, Integer> matchedDestinationAddresses,
+	                                   Integer destinationTemplateMatch)
+	{
+		if (matchedDestinationAddresses.containsKey(destinationTemplateMatch))
+		{
+			val value = matchedDestinationAddresses.get(destinationTemplateMatch);
+			matchedDestinationAddresses.put(destinationTemplateMatch, value + 1);
+		} else
+		{
+			matchedDestinationAddresses.put(destinationTemplateMatch, 1);
+		}
+	}
+
 	private void findTemplateMatches(byte[] memoryDump, List<Integer> templateMatches, List<Byte> searchTemplate)
 	{
 		// Iterate over the entire memory dump
-		for (var memoryDumpIndex = offsetAlignment;
-		     memoryDumpIndex < memoryDump.length;
-		     memoryDumpIndex += stepSize)
+		for (var memoryDumpIndex = 0; memoryDumpIndex < memoryDump.length; memoryDumpIndex += stepSize)
 		{
-			addTemplateMatch(searchTemplate, templateMatches, memoryDump, memoryDumpIndex, isAssembly);
+			addTemplateMatch(searchTemplate, templateMatches, memoryDump, memoryDumpIndex);
 
 			// We can bail out if more than one result has been found
 			if (templateMatches.size() > 1)
 			{
 				// Refine to reduce results
 				matchingBytesCount++;
+
+				if (matchingBytesCount > maximumSearchTemplateLength)
+				{
+					matchingBytesCount = startingMatchingBytesCount;
+					searchTemplateOffset = searchDirection.apply(searchTemplateOffset, stepSize);
+					LOGGER.info("Search template offset: " + numberToHexadecimal(searchTemplateOffset));
+				}
+
 				break;
 			}
 		}
 	}
 
-	private void handleNoResultsFound(int currentTries)
+	private void handleNoResultsFound()
 	{
 		val maximumTriesMiddle = maximumTriesCount / 2;
 
 		// Reset to go in reverse now
 		if (currentTries == maximumTriesMiddle)
 		{
-			offsetShiftBytes = startingSearchTemplateOffset;
+			searchTemplateOffset = startingSearchTemplateOffset;
 		}
 
-		if (currentTries < maximumTriesMiddle)
+		// When we exceeded half of the tries, reverse the direction
+		if (currentTries >= maximumTriesMiddle)
 		{
-			// Go forward
-			offsetShiftBytes += stepSize;
-		} else
-		{
-			// Go backwards
-			offsetShiftBytes -= stepSize;
+			searchDirection = reverseSearchDirection;
 		}
 
-		LOGGER.info("Shift bytes: " + toHexString(offsetShiftBytes).toUpperCase());
+		searchTemplateOffset = searchDirection.apply(searchTemplateOffset, stepSize);
+		LOGGER.info("Search template offset: " + numberToHexadecimal(searchTemplateOffset));
 
 		// Also reset the matching assembly instructions count to most likely get results again
 		matchingBytesCount = startingMatchingBytesCount;
 	}
 
 	private void addTemplateMatch(List<Byte> searchTemplate, List<Integer> searchTemplateMatches,
-	                              byte[] memoryDump, int startingIndex, boolean isAssembly)
+	                              byte[] memoryDump, int startingIndex)
 	{
 		var byteEqualFailuresCount = 0;
 
@@ -304,7 +348,7 @@ public class OffsetPorter
 			if (searchTemplateIndex == searchTemplate.size() - 1)
 			{
 				LOGGER.info("Failure probability: " + failureProbability);
-				val searchTemplateMatch = startingOffset + startingIndex - offsetShiftBytes;
+				val searchTemplateMatch = startingOffset + startingIndex - searchTemplateOffset;
 				searchTemplateMatches.add(searchTemplateMatch);
 			}
 		}
@@ -313,14 +357,14 @@ public class OffsetPorter
 	private List<Byte> getSearchTemplate()
 	{
 		val searchTemplate = new ArrayList<Byte>();
-		val searchTemplateOffset = sourceOffset - startingOffset + offsetShiftBytes;
-		LOGGER.info("Search template offset: 0x" + Long.toHexString(searchTemplateOffset).toUpperCase());
+		val searchTemplateSourceOffset = sourceOffset - startingOffset + searchTemplateOffset;
+		LOGGER.info("Search template source offset: " + numberToHexadecimal(searchTemplateSourceOffset));
 
 		for (var searchTemplateBytesIndex = 0;
 		     searchTemplateBytesIndex < matchingBytesCount;
 		     searchTemplateBytesIndex++)
 		{
-			val sourceIndex = searchTemplateOffset + searchTemplateBytesIndex * stepSize;
+			val sourceIndex = searchTemplateSourceOffset + searchTemplateBytesIndex * stepSize;
 
 			// Not enough bytes left
 			if (sourceIndex >= sourceMemoryDump.length - 1)
@@ -332,14 +376,15 @@ public class OffsetPorter
 			searchTemplate.add(sourceByte);
 		}
 
-		val byteArray = new byte[searchTemplate.size()];
-		for (var searchTemplateIndex = 0; searchTemplateIndex < searchTemplate.size(); searchTemplateIndex++)
+		val searchTemplateSize = searchTemplate.size();
+		val byteArray = new byte[searchTemplateSize];
+		for (var searchTemplateIndex = 0; searchTemplateIndex < searchTemplateSize; searchTemplateIndex++)
 		{
 			byteArray[searchTemplateIndex] = searchTemplate.get(searchTemplateIndex);
 		}
 
-		LOGGER.info("Search template: " + encodeHexString(byteArray).toUpperCase());
-		LOGGER.info("Search template length: " + searchTemplate.size());
+		LOGGER.info("Search template: " + byteArrayToHexadecimal(byteArray));
+		LOGGER.info("Search template length: " + searchTemplateSize);
 
 		return searchTemplate;
 	}
