@@ -1,22 +1,23 @@
 package com.bullywiihacks.address.porter.wiiu;
 
 import com.bullywiihacks.address.porter.wiiu.graphical_interface.UniversalOffsetPorterGUI;
-import com.google.common.base.Stopwatch;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
-import lombok.var;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.bullywiihacks.address.porter.wiiu.AssemblyChecker.isAssembly;
 import static com.bullywiihacks.address.porter.wiiu.Conversions.byteArrayToHexadecimal;
 import static com.bullywiihacks.address.porter.wiiu.Conversions.numberToHexadecimal;
+import static com.google.common.base.Stopwatch.createStarted;
+import static java.lang.Math.*;
+import static java.lang.Math.max;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.readAllBytes;
 import static java.nio.file.Files.size;
@@ -27,15 +28,12 @@ public class OffsetPorter
 {
 	private static final Logger LOGGER = getLogger();
 
+	private static final double SOURCE_MEMORY_DUMP_OFFSET_INTERVAL = 0.1;
+
 	// The minimum amount of accepted search templates before the port is considered successful
 	@Getter
 	@Setter
 	private int minimumAcceptedSearchTemplatesCount = 1;
-
-	// Only accept offsets in this particular range
-	@Getter
-	@Setter
-	private AddressRange acceptedOffsetRange = null;
 
 	// The search template bytes count to start at
 	@Getter
@@ -55,28 +53,13 @@ public class OffsetPorter
 	// How many search template tries in total before giving up
 	@Getter
 	@Setter
-	private int maximumSearchTemplateTries = 10_000;
-
-	// How much percent of the search template may be wrong to still be considered as acceptable
-	@Getter
-	@Setter
-	private double dataBytesUnequalThreshold = 1 / (double) 20;
-
-	// Whether the entire memory dump should be read for processing
-	@Getter
-	@Setter
-	private boolean readAllBytes = false;
-
-	// The interval percentage of file offsets around the starting offset to read from for the source and destination
-	@Getter
-	@Setter
-	private double fileOffsetsIntervalPercentage = 0.05;
+	private int maximumSearchTemplateTries = 1000;
 
 	// TODO: Mark the placeholders in the search template with ??
 	// The percentage of how much in the search template may differ without failing the comparison
 	@Getter
 	@Setter
-	private double searchTemplateBytesUnequalThreshold = dataBytesUnequalThreshold;
+	private double searchTemplateByteErrorThreshold = 0; // 1 / (double) 20;
 
 	// The step size of progressing the search template bytes
 	@Getter
@@ -88,8 +71,17 @@ public class OffsetPorter
 	@Setter
 	private SearchDirection startingSearchDirection = SearchDirection.POSITIVE;
 
+	// Only read offsets in this particular range
+	@Getter
+	@Setter
+	private ValueRange sourceOffsetRange;
+
+	// Only accept offsets in this particular range
+	@Getter
+	@Setter
+	private ValueRange destinationOffsetRange;
+
 	private int startingOffset;
-	private int endingOffset;
 	private final String sourceMemoryDumpFilePath;
 	private final String destinationMemoryDumpFilePath;
 	private byte[] sourceMemoryDump;
@@ -97,22 +89,21 @@ public class OffsetPorter
 	private int searchTemplateOffset;
 	private int maximumTriesCount;
 	private int sourceOffset;
-	private boolean isAssembly;
 	private int currentTries;
 	private SearchDirection searchDirection;
 	private SearchDirection reverseSearchDirection;
 
 	public OffsetPorter(String sourceMemoryDumpFilePath, String destinationMemoryDumpFilePath,
-	                    int sourceOffset)
+	                    int sourceOffset) throws IOException
 	{
 		this.sourceMemoryDumpFilePath = sourceMemoryDumpFilePath;
 		this.destinationMemoryDumpFilePath = destinationMemoryDumpFilePath;
 		this.sourceOffset = sourceOffset;
-	}
 
-	private byte[] readBytes(String sourceMemoryDumpFilePath) throws IOException
-	{
-		return FileReadingUtilities.readBytes(sourceMemoryDumpFilePath, startingOffset, endingOffset);
+		setSourceMemoryDumpOffsetInterval(SOURCE_MEMORY_DUMP_OFFSET_INTERVAL);
+
+		val destinationMemoryDumpSize = size(Paths.get(destinationMemoryDumpFilePath));
+		destinationOffsetRange = new ValueRange(0, destinationMemoryDumpSize);
 	}
 
 	/**
@@ -122,7 +113,7 @@ public class OffsetPorter
 	 */
 	public OffsetPortingReport port() throws IOException
 	{
-		val portingTimer = Stopwatch.createStarted();
+		val portingTimer = createStarted();
 
 		searchDirection = startingSearchDirection;
 		reverseSearchDirection = startingSearchDirection.invert();
@@ -130,30 +121,14 @@ public class OffsetPorter
 		searchTemplateOffset = startingSearchTemplateOffset;
 		maximumTriesCount = maximumSearchTemplateTries;
 
-		if (readAllBytes)
-		{
-			this.startingOffset = 0;
-			this.endingOffset = (int) size(Paths.get(sourceMemoryDumpFilePath));
-		} else
-		{
-			this.startingOffset = (int) (sourceOffset - sourceOffset * fileOffsetsIntervalPercentage);
-			this.startingOffset -= this.startingOffset % stepSize;
-
-			this.endingOffset = (int) (sourceOffset + sourceOffset * fileOffsetsIntervalPercentage);
-			this.endingOffset += this.endingOffset % stepSize;
-		}
+		this.startingOffset = 0;
 
 		LOGGER.info("Porting source offset 0x"
 				+ Long.toHexString(sourceOffset).toUpperCase() + lineSeparator() + " from "
 				+ getName(sourceMemoryDumpFilePath) + " to " + getName(destinationMemoryDumpFilePath) + "...");
 
-		sourceMemoryDump = readAllBytes ? readAllBytes(Paths.get(sourceMemoryDumpFilePath))
-				: readBytes(sourceMemoryDumpFilePath);
-		val destinationMemoryDump = readAllBytes ? readAllBytes(Paths.get(destinationMemoryDumpFilePath))
-				: readBytes(destinationMemoryDumpFilePath);
-
-		isAssembly = isAssembly(sourceMemoryDump, sourceOffset, startingOffset);
-		LOGGER.info("Is assembly: " + isAssembly + lineSeparator());
+		sourceMemoryDump = readAllBytes(Paths.get(sourceMemoryDumpFilePath));
+		val destinationMemoryDump = readAllBytes(Paths.get(destinationMemoryDumpFilePath));
 
 		val destinationTemplateMatches = new ArrayList<Integer>();
 		var sourceTemplateMatches = new ArrayList<Integer>();
@@ -178,15 +153,16 @@ public class OffsetPorter
 
 			searchTemplate = currentSearchTemplate;
 
-			findTemplateMatches(sourceMemoryDump, sourceTemplateMatches, searchTemplate);
+			findTemplateMatches(sourceTemplateMatches, sourceMemoryDump, searchTemplate, sourceOffsetRange);
 			LOGGER.info("Source template matches count: " + sourceTemplateMatches.size());
-
 			if (sourceTemplateMatches.size() == 0)
 			{
 				handleNoResultsFound();
 			} else if (sourceTemplateMatches.size() == 1)
 			{
-				findTemplateMatches(destinationMemoryDump, destinationTemplateMatches, searchTemplate);
+				findTemplateMatches(destinationTemplateMatches, destinationMemoryDump,
+						searchTemplate, destinationOffsetRange);
+				LOGGER.info("Destination template matches count: " + sourceTemplateMatches.size());
 
 				if (destinationTemplateMatches.size() == 0)
 				{
@@ -201,7 +177,7 @@ public class OffsetPorter
 				val destinationTemplateMatch = destinationTemplateMatches.get(0);
 				var matchesCount = 0;
 
-				if (acceptedOffsetRange == null || acceptedOffsetRange.contains(destinationTemplateMatch))
+				if (destinationOffsetRange.contains(destinationTemplateMatch))
 				{
 					LOGGER.info("Adding destination address " + numberToHexadecimal(destinationTemplateMatch) + "...");
 					addDestinationAddress(matchedDestinationAddresses, destinationTemplateMatch);
@@ -241,13 +217,28 @@ public class OffsetPorter
 		LOGGER.info("Porting took " + portingTimer);
 
 		// Return the only result
-		val ported = destinationTemplateMatches.size() > 0 ? destinationTemplateMatches.get(0) : -1;
-		val memoryRange = new MemoryRange(startingOffset, endingOffset);
-		val offsetPortingReport = new OffsetPortingReport(ported, isAssembly, memoryRange,
-				searchTemplate, -1 * searchTemplateOffset);
+		val portedAddress = destinationTemplateMatches.get(0);
+		val offsetPortingReport = new OffsetPortingReport(portedAddress, searchTemplate,
+				-1 * searchTemplateOffset);
 		LOGGER.info(offsetPortingReport);
 
 		return offsetPortingReport;
+	}
+
+	private void findTemplateMatches(List<Integer> templateMatches,
+	                                 byte[] memoryDumpBytes, List<Byte> searchTemplate,
+	                                 ValueRange offsetRange)
+	{
+		val startAddress = offsetRange.getStartValue();
+		val endAddress = offsetRange.getEndValue();
+		findTemplateMatches(memoryDumpBytes, templateMatches, searchTemplate, startAddress, endAddress);
+		if (templateMatches.size() == 1)
+		{
+			// Actually search it in the entire file instead and that will be the matches we want to keep using
+			templateMatches.clear();
+			findTemplateMatches(memoryDumpBytes, templateMatches, searchTemplate,
+					0, memoryDumpBytes.length);
+		}
 	}
 
 	private void addDestinationAddress(HashMap<Integer, Integer> matchedDestinationAddresses,
@@ -263,15 +254,17 @@ public class OffsetPorter
 		}
 	}
 
-	private void findTemplateMatches(byte[] memoryDump, List<Integer> templateMatches, List<Byte> searchTemplate)
+	private void findTemplateMatches(byte[] memoryDump, List<Integer> templateMatches, List<Byte> searchTemplate,
+	                                 long startAddress, long endAddress)
 	{
 		// Iterate over the entire memory dump
-		for (var memoryDumpIndex = 0; memoryDumpIndex < memoryDump.length; memoryDumpIndex += stepSize)
+		for (var memoryDumpIndex = (int) startAddress; memoryDumpIndex < endAddress; memoryDumpIndex += stepSize)
 		{
 			addTemplateMatch(searchTemplate, templateMatches, memoryDump, memoryDumpIndex);
 
 			// We can bail out if more than one result has been found
-			if (templateMatches.size() > 1)
+			val templateMatchesCount = templateMatches.size();
+			if (templateMatchesCount > 1)
 			{
 				// Refine to reduce results
 				matchingBytesCount++;
@@ -315,7 +308,6 @@ public class OffsetPorter
 	                              byte[] memoryDump, int startingIndex)
 	{
 		var byteEqualFailuresCount = 0;
-
 		for (var searchTemplateIndex = 0;
 		     searchTemplateIndex < searchTemplate.size();
 		     searchTemplateIndex++)
@@ -330,16 +322,17 @@ public class OffsetPorter
 			val memoryDumpByte = memoryDump[currentIndex];
 			val searchTemplateByte = searchTemplate.get(searchTemplateIndex);
 
-			val failureProbability = (byteEqualFailuresCount / (double) matchingBytesCount);
+			val failureProbability = byteEqualFailuresCount / (double) matchingBytesCount;
 
 			if (memoryDumpByte != searchTemplateByte)
 			{
 				byteEqualFailuresCount++;
-				val equalFailuresThresholdExceeded = failureProbability > searchTemplateBytesUnequalThreshold;
+				val equalFailuresThresholdExceeded = failureProbability > searchTemplateByteErrorThreshold;
 
 				// Did this template fail to match?
-				if (isAssembly || equalFailuresThresholdExceeded)
+				if (equalFailuresThresholdExceeded)
 				{
+					// LOGGER.info("Search template failure byte failure percentage: " + failureProbability);
 					return;
 				}
 			}
@@ -347,7 +340,7 @@ public class OffsetPorter
 			// Result found
 			if (searchTemplateIndex == searchTemplate.size() - 1)
 			{
-				LOGGER.info("Failure probability: " + failureProbability);
+				LOGGER.info("Search template success byte failure percentage: " + failureProbability);
 				val searchTemplateMatch = startingOffset + startingIndex - searchTemplateOffset;
 				searchTemplateMatches.add(searchTemplateMatch);
 			}
@@ -387,5 +380,14 @@ public class OffsetPorter
 		LOGGER.info("Search template length: " + searchTemplateSize);
 
 		return searchTemplate;
+	}
+
+	public void setSourceMemoryDumpOffsetInterval(double percentage) throws IOException
+	{
+		val startOffset = (long) (max(0, sourceOffset - percentage * sourceOffset));
+		val endOffset = (long) (min(Files.size(Paths.get(sourceMemoryDumpFilePath)), sourceOffset + percentage * sourceOffset));
+		LOGGER.info("Setting start offset to: " + numberToHexadecimal(startOffset));
+		LOGGER.info("Setting end offset to: " + numberToHexadecimal(endOffset));
+		sourceOffsetRange = new ValueRange(startOffset, endOffset);
 	}
 }

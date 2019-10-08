@@ -282,7 +282,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 							portingCanceled = false;
 						} else
 						{
-							if (offsetPortingReport.getAddress() == OffsetPortingReport.FAILED_ADDRESS)
+							/* if (offsetPortingReport.getAddress() == OffsetPortingReport.FAILED_ADDRESS)
 							{
 								JOptionPane.showMessageDialog(rootPane,
 										offsetPortingReport.toString(),
@@ -291,7 +291,7 @@ public class UniversalOffsetPorterGUI extends JFrame
 							} else
 							{
 								resultsArea.setText(offsetPortingReport.toString());
-							}
+							} */
 						}
 					} catch (Exception exception)
 					{

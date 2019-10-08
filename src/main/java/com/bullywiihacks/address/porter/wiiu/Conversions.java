@@ -1,7 +1,6 @@
 package com.bullywiihacks.address.porter.wiiu;
 
 import lombok.val;
-import lombok.var;
 
 import java.util.List;
 
@@ -23,7 +22,7 @@ class Conversions
 		return stringBuilder.toString().trim();
 	}
 
-	static String numberToHexadecimal(Integer value)
+	static String numberToHexadecimal(long value)
 	{
 		val stringBuilder = new StringBuilder();
 		if (value < 0)

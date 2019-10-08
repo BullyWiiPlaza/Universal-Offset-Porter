@@ -92,7 +92,7 @@ public class DefaultContextMenu extends JPopupMenu
 			public void keyPressed(KeyEvent pressedEvent)
 			{
 				if ((pressedEvent.getKeyCode() == KeyEvent.VK_Z)
-						&& ((pressedEvent.getModifiers() & KeyEvent.CTRL_MASK) != 0))
+						&& ((pressedEvent.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0))
 				{
 					if (undoManager.canUndo())
 					{
@@ -101,7 +101,7 @@ public class DefaultContextMenu extends JPopupMenu
 				}
 
 				if ((pressedEvent.getKeyCode() == KeyEvent.VK_Y)
-						&& ((pressedEvent.getModifiers() & KeyEvent.CTRL_MASK) != 0))
+						&& ((pressedEvent.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0))
 				{
 					if (undoManager.canRedo())
 					{

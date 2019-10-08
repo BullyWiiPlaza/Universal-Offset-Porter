@@ -1,23 +1,14 @@
 package com.bullywiihacks.address.porter.wii.utilities.contextmenu;
 
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-
-import javax.swing.JMenuItem;
-import javax.swing.JPopupMenu;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
+import javax.swing.*;
 import javax.swing.event.UndoableEditEvent;
 import javax.swing.event.UndoableEditListener;
 import javax.swing.text.JTextComponent;
 import javax.swing.undo.UndoManager;
+import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.event.*;
 
 @SuppressWarnings("serial")
 public class DefaultContextMenu extends JPopupMenu
@@ -145,7 +136,7 @@ public class DefaultContextMenu extends JPopupMenu
 			public void keyPressed(KeyEvent pressedEvent)
 			{
 				if ((pressedEvent.getKeyCode() == KeyEvent.VK_Z)
-						&& ((pressedEvent.getModifiers() & KeyEvent.CTRL_MASK) != 0))
+						&& ((pressedEvent.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0))
 				{
 					if (undoManager.canUndo())
 					{
@@ -154,7 +145,7 @@ public class DefaultContextMenu extends JPopupMenu
 				}
 
 				if ((pressedEvent.getKeyCode() == KeyEvent.VK_Y)
-						&& ((pressedEvent.getModifiers() & KeyEvent.CTRL_MASK) != 0))
+						&& ((pressedEvent.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0))
 				{
 					if (undoManager.canRedo())
 					{
