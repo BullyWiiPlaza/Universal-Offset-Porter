@@ -1,6 +1,7 @@
 package com.bullywiihacks.address.porter.wiiu;
 
 import lombok.val;
+import lombok.var;
 
 import java.util.List;
 

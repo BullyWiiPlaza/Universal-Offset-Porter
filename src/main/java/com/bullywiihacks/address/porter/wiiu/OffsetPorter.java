@@ -4,6 +4,7 @@ import com.bullywiihacks.address.porter.wiiu.graphical_interface.UniversalOffset
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
+import lombok.var;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
@@ -16,8 +17,8 @@ import java.util.List;
 import static com.bullywiihacks.address.porter.wiiu.Conversions.byteArrayToHexadecimal;
 import static com.bullywiihacks.address.porter.wiiu.Conversions.numberToHexadecimal;
 import static com.google.common.base.Stopwatch.createStarted;
-import static java.lang.Math.*;
 import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.file.Files.readAllBytes;
 import static java.nio.file.Files.size;
